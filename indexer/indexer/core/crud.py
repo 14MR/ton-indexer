@@ -526,7 +526,8 @@ def get_nft_items(session: Session,
                   collection_address: Optional[str]=None,
                   owner_address: Optional[str]=None,
                   limit: Optional[int]=None,
-                  offset: Optional[int]=None,):
+                  offset: Optional[int]=None,
+                  lt: Optional[int] = None):
     query = session.query(NFTItem)
     if address is not None:
         query = query.filter(NFTItem.address == address)  # TODO: index
@@ -538,6 +539,8 @@ def get_nft_items(session: Session,
         query = query.filter(NFTItem.owner_address == owner_address)  # TODO: index
     if collection_address is not None:
         query = query.order_by(NFTItem.index.asc())
+    if lt is not None:
+        query = query.filter(NFTItem.last_transaction_lt <= lt)
     query = limit_query(query, limit, offset)
     query = query.options(selectinload(NFTItem.collection))
     return query.all()

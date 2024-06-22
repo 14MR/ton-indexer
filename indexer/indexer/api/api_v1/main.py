@@ -416,6 +416,7 @@ async def get_nft_items(
     owner_address: Optional[str] = Query(None, description='Address of NFT owner. Must be sent in hex, base64 and base64url forms.'),
     collection_address: Optional[str] = Query(None, description='NFT collection address. Must be sent in hex, base64 and base64url forms.'),
     index: Optional[str] = Query(None, description='NFT Item index. Use it together with collection address.'),
+    timestamp: int = Query(None, description='Query state at given timestamp. Must be sent in UTC timestamp.'),
     limit: int = Query(128, description='Limit number of queried rows. Use with *offset* to batch read.', ge=1, le=256),
     offset: int = Query(0, description='Skip first N rows. Use with *limit* to batch read.', ge=0),
     db: AsyncSession = Depends(get_db)):
@@ -427,11 +428,15 @@ async def get_nft_items(
     address = address_to_raw(address)
     owner_address = address_to_raw(owner_address)
     collection_address = address_to_raw(collection_address)
+    block_at_timestamp = None
+    if timestamp is not None:
+        block_at_timestamp = await db.run_sync(crud.get_block_by_timestamp, timestamp=timestamp)
     res = await db.run_sync(crud.get_nft_items,
                             address=address,
                             index=index,
                             owner_address=owner_address,
                             collection_address=collection_address,
+                            lt=block_at_timestamp.end_lt if block_at_timestamp else None,
                             limit=limit,
                             offset=offset)
     return schemas.NFTItemList.from_orm(res)
