@@ -611,7 +611,8 @@ def get_jetton_wallets(session: Session,
                        owner_address: Optional[str]=None,
                        jetton_address: Optional[str]=None,
                        limit: Optional[int]=None,
-                       offset: Optional[int]=None):
+                       offset: Optional[int]=None,
+                       lt: Optional[int]=None):
     query = session.query(JettonWallet)
     if address is not None:
         query = query.filter(JettonWallet.address == address)
@@ -620,8 +621,15 @@ def get_jetton_wallets(session: Session,
     if jetton_address is not None:
         query = query.filter(JettonWallet.jetton == jetton_address)
         query = query.order_by(JettonWallet.balance.desc())
+    if lt is not None:
+        query = query.filter(JettonWallet.last_transaction_lt <= lt)
     query = limit_query(query, limit, offset)
     return query.all()
+
+
+def get_block_by_timestamp(session: Session, timestamp: int):
+    query = session.query(Block).filter(Block.gen_utime <= timestamp).order_by(Block.gen_utime.desc()).first()
+    return query
 
 
 def get_jetton_transfers(session: Session,
